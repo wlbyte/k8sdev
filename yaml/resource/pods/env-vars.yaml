@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: envar-demo
+  labels:
+    purpose: demonstrate-envars
+spec:
+  containers:
+  - name: envar-demo-container
+    image: gcr.io/google-samples/hello-app:2.0
+    env:
+    - name: SERVICE_PORT
+      value: "80"
+    - name: SERVICE_IP
+      value: "172.17.0.1"
+    - name: UNCHANGED_REFERENCE
+      value: "$(PROTOCOL)://$(SERVICE_IP):$(SERVICE_PORT)"
+    - name: PROTOCOL
+      value: "https"
+    - name: SERVICE_ADDRESS
+      value: "$(PROTOCOL)://$(SERVICE_IP):$(SERVICE_PORT)"
+    - name: ESCAPED_REFERENCE
+      value: "$$(PROTOCOL)://$(SERVICE_IP):$(SERVICE_PORT)"
+    - name: NODE_NAME  # From other Fields
+      valueFrom:
+         fieldRef:
+          fieldPath: spec.nodeName

@@ -1,0 +1,1 @@
+# 根据service的注解自动创建或删除对应的ingress

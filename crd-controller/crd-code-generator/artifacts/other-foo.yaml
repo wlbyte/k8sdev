@@ -1,0 +1,7 @@
+apiVersion: crd.example.com/v1
+kind: Foo
+metadata:
+  name: other-foo
+spec:
+  deploymentName: other-foo
+  replicas: 1

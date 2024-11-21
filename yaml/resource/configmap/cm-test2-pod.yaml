@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cmd-test2-pod
+spec:
+  containers:
+    - name: cmd-test
+      image: busybox
+      command: ["/bin/sh", "-c", "env | grep APP"]
+      envFrom:
+        - configMapRef:
+            name: cm-appvars
+  restartPolicy: Never

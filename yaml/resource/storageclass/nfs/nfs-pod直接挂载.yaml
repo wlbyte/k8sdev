@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  labels:
+    name: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: nginx
+  template:
+    metadata:
+      labels:
+        name: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:latest
+          ports:
+          - containerPort: 80
+          volumeMounts:
+            - name: wwwroot
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: wwwroot
+          nfs:
+            server: 10.8.111.153
+            path: "/home/nfsfile/www"

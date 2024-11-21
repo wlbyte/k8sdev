@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tomcat-deployment
+  namespace: default
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: tomcat-app
+  template:
+    metadata:
+      labels:
+        app: tomcat-app
+    spec:
+      containers:
+      - name: tomcat
+        imagePullPolicy: Always
+        image: docker.m.daocloud.io/nginx:latest
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tomcat-service
+  namespace: default
+spec:
+  selector:
+    app: tomcat-app
+  type: NodePort
+  ports:
+  - name: tomcat-port
+    port: 8080
+    targetPort: 8080
+    nodePort: 30001
+    protocol: TCP

@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resource-monitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: resource-monitor
+  template:
+    metadata:
+      labels:
+        app: resource-monitor
+    spec:
+      dnsPolicy: ClusterFirst
+      serviceAccountName: monitor-user
+      containers:
+      - name: resource-monitor
+        image: registry.cn-hangzhou.aliyuncs.com/wlbyte/resource-monitor:1.0
+        imagePullPolicy: Always

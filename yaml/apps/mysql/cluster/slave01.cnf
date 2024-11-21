@@ -1,0 +1,18 @@
+[mysqld]
+skip-host-cache
+skip-name-resolve
+datadir          = /var/lib/mysql
+socket           = /var/run/mysqld/mysqld.sock
+secure-file-priv = /var/lib/mysql-files
+pid-file         = /var/run/mysqld/mysqld.pid
+user             = mysql
+secure-file-priv = NULL
+server-id        = 2
+log-bin          = slave-bin
+relay-log        = slave-relay-bin
+relay-log-index  = slave-relay-bin.index
+
+[client]
+socket           = /var/run/mysqld/mysqld.sock
+
+!includedir /etc/mysql/conf.d/

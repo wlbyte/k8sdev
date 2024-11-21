@@ -1,0 +1,133 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-slave01-nfs-pv
+  namespace: mysql
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 172.21.101.20
+    path: /data/nfs/mysql-slaver-01
+  storageClassName: "nfs"
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-slave01-nfs-pvc
+  namespace: mysql
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: "nfs"
+  resources:
+    requests:
+      storage: 2Gi
+  volumeName: mysql-slave01-nfs-pv
+
+---
+apiVersion: v1
+data:
+  my.cnf: |+
+    [mysqld]
+    skip-host-cache
+    skip-name-resolve
+    datadir          = /var/lib/mysql
+    socket           = /var/run/mysqld/mysqld.sock
+    secure-file-priv = /var/lib/mysql-files
+    pid-file         = /var/run/mysqld/mysqld.pid
+    user             = mysql
+    secure-file-priv = NULL
+    server-id        = 2
+    log-bin          = slave-bin
+    relay-log        = slave-relay-bin
+    relay-log-index  = slave-relay-bin.index
+
+    [client]
+    socket           = /var/run/mysqld/mysqld.sock
+
+    !includedir /etc/mysql/conf.d/
+
+kind: ConfigMap
+metadata:
+  name: mysql-slave01-cm
+  namespace: mysql
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-slave01-svc
+  namespace: mysql
+  labels:
+    app: mysql-slave01
+spec:
+  ports:
+  - port: 3306
+    name: mysql
+    targetPort: 3306
+    nodePort: 30308
+  selector:
+    app: mysql-slave01
+  type: NodePort
+  sessionAffinity: ClientIP
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql-slave01-deploy
+  namespace: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql-slave01
+  serviceName: "mysql-slave01-svc"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mysql-slave01
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - args:
+        - --character-set-server=utf8mb4
+        - --collation-server=utf8mb4_unicode_ci
+        - --lower_case_table_names=1
+        - --default-time_zone=+8:00
+        name: mysql
+        # image: docker.io/library/mysql:8.0.34
+        image: registry.cn-shenzhen.aliyuncs.com/xiaohh-docker/mysql:8.0.34
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+        - name: mysql-conf
+          mountPath: /etc/my.cnf
+          readOnly: true
+          subPath: my.cnf
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: mysql_root_password
+              name: mysql-password
+      volumes:
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: mysql-slave01-nfs-pvc
+      - name: mysql-conf
+        configMap:
+          name: mysql-slave01-cm
+          items:
+          - key: my.cnf
+            mode: 0644
+            path: my.cnf

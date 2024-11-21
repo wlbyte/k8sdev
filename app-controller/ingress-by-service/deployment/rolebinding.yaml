@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ingress-by-service
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ingress-by-service
+subjects:
+- kind: ServiceAccount
+  name: ingress-by-service
+  namespace: default

@@ -1,0 +1,114 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mysql
+spec: {}
+status: {}
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-password
+  namespace: mysql
+data:
+  mysql_root_password: MTIzNDU2
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-nfs-pv
+  namespace: mysql
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 172.21.101.20
+    path: /data/nfs/mysql
+  storageClassName: "nfs"
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-nfs-pvc
+  namespace: mysql
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: "nfs"
+  resources:
+    requests:
+      storage: 1Gi
+  volumeName: mysql-nfs-pv
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-single-svc # mysql暴露服务的名字
+  namespace: mysql # 命名空间
+  labels:
+    app: mysql
+spec:
+  ports:
+  - port: 3306 # 暴露给外部3306端口
+    name: mysql
+    targetPort: 3306 # 内部目标3306端口
+    nodePort: 30306 # 外部访问集群nodeport的30306端口
+  selector:
+    app: mysql
+  type: NodePort
+  sessionAffinity: ClientIP
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet # 创建一个StatefulSet有状态的控制器
+metadata:
+  name: mysql-single-deploy # 部署的名字
+  namespace: mysql # 命名空间
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  serviceName: "mysql-single-svc" # 注意指定上面的那个服务名称
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - args: # 新增一些启动参数
+        - --character-set-server=utf8mb4
+        - --collation-server=utf8mb4_unicode_ci
+        - --lower_case_table_names=1
+        - --default-time_zone=+8:00
+        name: mysql
+        # image: docker.io/library/mysql:5.7.43
+        image: registry.cn-shenzhen.aliyuncs.com/xiaohh-docker/mysql:5.7.43 # 因为dockerhub上镜像经常拉取失败，所以使用此镜像
+        ports:
+        - containerPort: 3306 # 容器内部暴露3306端口
+          name: mysql
+        volumeMounts:
+        - name: mysql-data # 引用pvc挂载的名字
+          mountPath: /var/lib/mysql # 这个是容器内部存放数据的文件夹目录，需要挂在到pvc当中
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom: # mysql的密码引用上面创建的secret
+            secretKeyRef:
+              key: mysql_root_password
+              name: mysql-password
+      volumes:
+      - name: mysql-data # pvc的挂载名称
+        persistentVolumeClaim:
+          claimName: mysql-nfs-pvc # 指定使用那个pvc

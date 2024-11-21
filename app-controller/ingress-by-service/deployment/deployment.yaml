@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ingress-by-service
+  name: ingress-by-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ingress-by-service
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: ingress-by-service
+    spec:
+      serviceAccount: ingress-by-service
+      containers:
+      - image: registry.cn-hangzhou.aliyuncs.com/wlbyte/ingress-by-service:1.0.0
+        imagePullPolicy: Always
+        name: ingress-by-service
+status: {}

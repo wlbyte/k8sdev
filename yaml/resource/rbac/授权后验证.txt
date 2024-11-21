@@ -1,0 +1,3 @@
+kubectl auth can-i list ingresses --as=system:serviceaccount:default:ingress-by-service -n default
+-> yes  # 表示授权成功
+
